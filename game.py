@@ -33,6 +33,10 @@ class Game:
         self.clock = pygame.time.Clock()
         self.ui = UI(self.screen)
 
+        # --- Title screen state ---
+        self.state = "title"  # "title" or "playing"
+        self._load_title_screen()
+
         self.player = Player(start_x=260, ground_y=self.GROUND_Y)
         self.enemy = Enemy(start_x=740, ground_y=self.GROUND_Y)
         self.ai = AdaptiveAI()
@@ -50,6 +54,16 @@ class Game:
         sprite_dir = Path("Martial Hero") / "Sprites"
         self.player_animator = FighterAnimator(sprite_dir, self.player.position())
         self.enemy_animator = FighterAnimator(sprite_dir, self.enemy.position(), flip=True)
+
+    def _load_title_screen(self):
+        """Load the title screen image, scaled to fit the game window."""
+        try:
+            raw = pygame.image.load("title_screen.png").convert()
+            self.title_screen_img = pygame.transform.smoothscale(
+                raw, (self.WIDTH, self.HEIGHT)
+            )
+        except (pygame.error, FileNotFoundError):
+            self.title_screen_img = None
 
     def load_high_score(self):
         try:
@@ -70,28 +84,40 @@ class Game:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     running = False
-                elif event.type == pygame.KEYDOWN:
-                    if event.key == pygame.K_r and self.game_over:
-                        self.restart()
-                    # Action keys — single-shot via event.
-                    elif event.key in (pygame.K_8, pygame.K_KP8):
-                        self.pending_player_action = "Attack"
-                    elif event.key in (pygame.K_9, pygame.K_KP9):
-                        self.pending_player_action = "Defend"
-                    elif event.key in (pygame.K_0, pygame.K_KP0):
-                        self.pending_player_action = "Heal"
-                    # Movement keys — track held state.
-                    elif event.key in (pygame.K_1, pygame.K_2, pygame.K_3,
-                                       pygame.K_KP1, pygame.K_KP2, pygame.K_KP3):
-                        self.held_keys.add(event.key)
-                elif event.type == pygame.KEYUP:
-                    self.held_keys.discard(event.key)
-                elif event.type == pygame.WINDOWFOCUSLOST:
-                    # Clear held keys so no phantom movement when focus returns.
-                    self.held_keys.clear()
 
-            self.update(dt_ms)
-            self.draw()
+                # ---------- Title screen input ----------
+                elif self.state == "title":
+                    if event.type == pygame.KEYDOWN and event.key == pygame.K_SPACE:
+                        self.state = "playing"
+
+                # ---------- Gameplay input ----------
+                else:
+                    if event.type == pygame.KEYDOWN:
+                        if event.key == pygame.K_r and self.game_over:
+                            self.restart()
+                        # Action keys — single-shot via event.
+                        elif event.key in (pygame.K_8, pygame.K_KP8):
+                            self.pending_player_action = "Attack"
+                        elif event.key in (pygame.K_9, pygame.K_KP9):
+                            self.pending_player_action = "Defend"
+                        elif event.key in (pygame.K_0, pygame.K_KP0):
+                            self.pending_player_action = "Heal"
+                        # Movement keys — track held state.
+                        elif event.key in (pygame.K_1, pygame.K_2, pygame.K_3,
+                                           pygame.K_KP1, pygame.K_KP2, pygame.K_KP3):
+                            self.held_keys.add(event.key)
+                    elif event.type == pygame.KEYUP:
+                        self.held_keys.discard(event.key)
+                    elif event.type == pygame.WINDOWFOCUSLOST:
+                        # Clear held keys so no phantom movement when focus returns.
+                        self.held_keys.clear()
+
+            # ---------- State-driven update & draw ----------
+            if self.state == "title":
+                self._draw_title_screen()
+            else:
+                self.update(dt_ms)
+                self.draw()
 
         self.save_high_score()
         pygame.quit()
@@ -403,6 +429,27 @@ class Game:
 
         if self.game_over:
             self._draw_game_over()
+
+        pygame.display.flip()
+
+    def _draw_title_screen(self):
+        """Render the title screen and wait for SPACEBAR."""
+        if self.title_screen_img:
+            self.screen.blit(self.title_screen_img, (0, 0))
+        else:
+            # Fallback: simple text title screen if image is missing.
+            self.screen.fill((10, 5, 30))
+            font_big = pygame.font.SysFont("arial", 62, bold=True)
+            font_sub = pygame.font.SysFont("arial", 28)
+            font_hint = pygame.font.SysFont("arial", 22)
+
+            title = font_big.render("NINJA DUEL", True, (220, 50, 50))
+            subtitle = font_sub.render("Adaptive Warrior", True, (200, 180, 140))
+            prompt = font_hint.render("Press SPACEBAR to Start Game", True, (200, 200, 200))
+
+            self.screen.blit(title, title.get_rect(center=(self.WIDTH // 2, 270)))
+            self.screen.blit(subtitle, subtitle.get_rect(center=(self.WIDTH // 2, 340)))
+            self.screen.blit(prompt, prompt.get_rect(center=(self.WIDTH // 2, 440)))
 
         pygame.display.flip()
 
