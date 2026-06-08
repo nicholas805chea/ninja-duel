@@ -165,7 +165,7 @@ To update the weights and biases, the loss gradient is backpropagated through th
 4.  **Parameter Updates:**
     $$W^{[l]} \leftarrow W^{[l]} - \eta \frac{\partial \mathcal{L}}{\partial W^{[l]}}$$
     $$B^{[l]} \leftarrow B^{[l]} - \eta \frac{\partial \mathcal{L}}{\partial B^{[l]}}$$
-    where $\eta$ represents the learning rate (e.g., $\eta = 0.01$).
+    where $\eta$ represents the learning rate (e.g., $\eta = 0.03$).
 
 ---
 
@@ -235,7 +235,7 @@ class MLPPredictor:
             y_one_hot[target_idx] = 1.0
             self.experience_buffer.append((features, y_one_hot))
 
-    def train_on_buffer(self, learning_rate=0.01):
+    def train_on_buffer(self, learning_rate=0.03):
         """Train the neural network using backpropagation on recorded logs."""
         if len(self.experience_buffer) < 10:
             return  # Need sufficient data points

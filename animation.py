@@ -8,11 +8,12 @@ import pygame
 class SpriteAnimation:
     """Loads a horizontal sprite sheet and plays it frame by frame."""
 
-    def __init__(self, image_path, scale=2.8, frame_duration=90, flip=False):
+    def __init__(self, image_path, scale=2.8, frame_duration=90, flip=False, tint=None):
         self.image_path = Path(image_path)
         self.scale = scale
         self.frame_duration = frame_duration
         self.default_flip = flip
+        self.tint = tint  # Optional (R, G, B) tuple to colour-shift sprites
         self.frames = []
         self.current_frame = 0
         self.elapsed_ms = 0
@@ -38,7 +39,18 @@ class SpriteAnimation:
                 int(sheet_height * self.scale),
             )
             frame = pygame.transform.scale(frame, scaled_size)
+            if self.tint is not None:
+                frame = self._apply_tint(frame, self.tint)
             self.frames.append(frame)
+
+    @staticmethod
+    def _apply_tint(surface, tint):
+        """Apply a colour tint while preserving alpha transparency."""
+        tinted = surface.copy()
+        overlay = pygame.Surface(tinted.get_size(), pygame.SRCALPHA)
+        overlay.fill((*tint, 255))
+        tinted.blit(overlay, (0, 0), special_flags=pygame.BLEND_RGB_MULT)
+        return tinted
 
     def _fallback_surface(self):
         surface = pygame.Surface((120, 120), pygame.SRCALPHA)
@@ -100,14 +112,17 @@ class FighterAnimator:
 
     NON_LOOPING_STATES = {"attack", "hit", "death"}
 
-    def __init__(self, sprite_dir, position, flip=False):
+    def __init__(self, sprite_dir, position, flip=False, tint=None):
         self.sprite_dir = Path(sprite_dir)
         self.position = position
         self.flip = flip
+        self.tint = tint
         self.state = "idle"
         self.reverse_playback = False
         self.animations = {
-            state: SpriteAnimation(self.sprite_dir / filename, flip=flip)
+            state: SpriteAnimation(
+                self.sprite_dir / filename, flip=flip, tint=tint
+            )
             for state, filename in self.STATE_TO_FILE.items()
         }
 

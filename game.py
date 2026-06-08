@@ -53,7 +53,7 @@ class Game:
 
         sprite_dir = Path("Martial Hero") / "Sprites"
         self.player_animator = FighterAnimator(sprite_dir, self.player.position())
-        self.enemy_animator = FighterAnimator(sprite_dir, self.enemy.position(), flip=True)
+        self.enemy_animator = FighterAnimator(sprite_dir, self.enemy.position(), flip=True, tint=(255, 80, 80))
 
     def _load_title_screen(self):
         """Load the title screen image, scaled to fit the game window."""
@@ -148,7 +148,9 @@ class Game:
 
         self.player.stop_horizontal_movement()
         self.player_action_cooldown = self.PLAYER_ACTION_COOLDOWN
-        self.ai.record_player_action(action)
+        self.ai.record_player_action(
+            action, self.player, self.enemy, self.enemy.boss_phase
+        )
         self._perform_action(
             action,
             self.player,
